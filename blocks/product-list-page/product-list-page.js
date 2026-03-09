@@ -31,9 +31,9 @@ export default async function decorate(block) {
     <div class="search__wrapper">
       <div class="search__result-info"></div>
       <div class="search__view-facets"></div>
-      <div class="search__facets"></div>
+      <div class="search__facets dropin-design"></div>
       <div class="search__product-sort"></div>
-      <div class="search__product-list"></div>
+      <div class="search__product-list dropin-design"></div>
       <div class="search__pagination"></div>
     </div>
   `);
@@ -46,6 +46,7 @@ export default async function decorate(block) {
   const $pagination = fragment.querySelector('.search__pagination');
 
   block.innerHTML = '';
+  block.classList.add('dropin-design');
   block.appendChild(fragment);
 
   // Add category url path to block for enrichment

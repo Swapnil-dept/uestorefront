@@ -1,6 +1,6 @@
-/* Flipkart-style PLP: sidebar filters + top bar (count + sort) + dense product grid */
+/* Flipkart-style PLP: sidebar filters (dropin-design) + top bar + dense product grid (dropin-design) */
 
-.block.product-list-page .search__wrapper {
+.block.product-list-page.dropin-design .search__wrapper {
     display: grid;
     margin-block: var(--spacing-small);
     grid-template-areas:
@@ -11,6 +11,7 @@
         "product-list"
         "pagination";
     gap: 0;
+    max-width: 100%;
 }
 
 .block.product-list-page .search__result-info {
@@ -55,13 +56,14 @@
     width: 1.75em;
 }
 
-.block.product-list-page .search__facets {
+/* Facets sidebar – dropin-design for filter styling */
+.block.product-list-page .search__facets.dropin-design {
     grid-area: facets;
     margin-block-end: var(--spacing-small);
     display: none;
 }
 
-.block.product-list-page .search__facets--visible {
+.block.product-list-page .search__facets.dropin-design.search__facets--visible {
     display: block;
 }
 
@@ -70,35 +72,37 @@
     margin-block-end: var(--spacing-small);
 }
 
-.block.product-list-page .search__product-list {
+.block.product-list-page .search__product-list.dropin-design {
     grid-area: product-list;
     margin-block-end: var(--spacing-small);
     min-width: 0;
 }
 
-/* Flipkart-style dense product grid: more columns, tighter gaps */
-.block.product-list-page .search__product-list .product-discovery-product-list {
+/* Flipkart-style product grid: dense columns, uniform card sizing */
+.block.product-list-page .search__product-list.dropin-design .product-discovery-product-list {
     width: 100%;
 }
 
-.block.product-list-page .search__product-list .product-discovery-product-list__grid {
+.block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--spacing-small);
+    gap: 12px 16px;
 }
 
-.block.product-list-page .search__product-list .product-discovery-product-list__grid .dropin-product-item-card {
+.block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid .dropin-product-item-card {
     margin: 0;
     width: 100%;
     background: var(--color-neutral-50);
     border: 1px solid var(--color-neutral-300);
-    border-radius: var(--shape-border-radius-2);
+    border-radius: 8px;
     overflow: hidden;
     transition: box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
 }
 
-.block.product-list-page .search__product-list .product-discovery-product-list__grid .dropin-product-item-card:hover {
-    box-shadow: var(--shape-shadow-2);
+.block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid .dropin-product-item-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
 }
 
 .block.product-list-page .search__pagination {
@@ -128,31 +132,34 @@
     display: none;
 }
 
-/* Tablet: sidebar + content, top bar row (count left, sort right), product grid */
+/* Flipkart layout: fixed left sidebar (filters) + main content (top bar + grid) */
 @media only screen and (min-width: 768px) {
-    .block.product-list-page .search__wrapper {
+    .block.product-list-page.dropin-design .search__wrapper {
         grid-template-areas:
             "facets result-info product-sort"
             "facets product-list product-list"
             "facets pagination pagination";
-        grid-template-columns: 240px 1fr auto;
+        grid-template-columns: 220px 1fr auto;
         grid-template-rows: auto 1fr auto;
         align-items: start;
-        gap: var(--spacing-small) var(--spacing-medium);
+        gap: 16px 24px;
     }
 
     .block.product-list-page .search__view-facets {
         display: none;
     }
 
-    .block.product-list-page .search__facets {
+    /* Sidebar: facets with dropin-design, Flipkart-style narrow sticky panel */
+    .block.product-list-page .search__facets.dropin-design {
         display: block;
         position: sticky;
-        top: var(--spacing-small);
-        max-height: calc(100vh - var(--spacing-small) * 2);
+        top: 16px;
+        max-height: calc(100vh - 32px);
         overflow-y: auto;
-        padding-inline-end: var(--spacing-small);
+        padding-inline-end: 16px;
+        margin-inline-end: 0;
         border-inline-end: 1px solid var(--color-neutral-300);
+        background: var(--color-neutral-50);
     }
 
     .block.product-list-page .search__result-info {
@@ -165,33 +172,38 @@
         margin-block-end: 0;
     }
 
-    /* Top bar: result count left, sort right (Flipkart-style) */
     .block.product-list-page .search__result-info,
     .block.product-list-page .search__product-sort {
         align-self: center;
     }
 
-    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+    /* Product grid: 3 cols tablet (Flipkart-style gap) */
+    .block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid {
         grid-template-columns: repeat(3, 1fr);
-        gap: var(--spacing-small);
+        gap: 12px 16px;
     }
 }
 
-/* Desktop: 4 columns (Flipkart-like) */
+/* Desktop: 4 columns */
 @media only screen and (min-width: 1024px) {
-    .block.product-list-page .search__wrapper {
-        grid-template-columns: 260px 1fr;
+    .block.product-list-page.dropin-design .search__wrapper {
+        grid-template-columns: 240px 1fr auto;
     }
 
-    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+    .block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid {
         grid-template-columns: repeat(4, 1fr);
+        gap: 12px 16px;
     }
 }
 
-/* Large desktop: 5 columns like Flipkart */
+/* Large desktop: 5 columns (Flipkart PLP grid) */
 @media only screen and (min-width: 1280px) {
-    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+    .block.product-list-page.dropin-design .search__wrapper {
+        grid-template-columns: 260px 1fr auto;
+    }
+
+    .block.product-list-page .search__product-list.dropin-design .product-discovery-product-list__grid {
         grid-template-columns: repeat(5, 1fr);
-        gap: var(--spacing-small);
+        gap: 12px 16px;
     }
 }
