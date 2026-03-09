@@ -72,6 +72,46 @@
     margin-block-end: var(--spacing-small);
 }
 
+/* Sort as tabs (replaces dropdown / dropin-picker) – Flipkart-style */
+.block.product-list-page .search__sort-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    align-items: center;
+    border-bottom: 1px solid var(--color-neutral-300);
+    padding-block-end: var(--spacing-xsmall);
+}
+
+.block.product-list-page .search__sort-tabs .search__sort-tab {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: var(--spacing-xsmall) var(--spacing-small);
+    font: inherit;
+    font-size: 0.875rem;
+    color: var(--color-neutral-700);
+    cursor: pointer;
+    border-radius: var(--shape-border-radius-2);
+    margin-inline-end: var(--spacing-xxsmall);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.block.product-list-page .search__sort-tabs .search__sort-tab:hover {
+    background: var(--color-neutral-200);
+    color: var(--color-neutral-900);
+}
+
+.block.product-list-page .search__sort-tabs .search__sort-tab[aria-selected="true"] {
+    background: var(--color-brand-600);
+    color: var(--color-neutral-100);
+    font-weight: 500;
+}
+
+.block.product-list-page .search__sort-tabs .search__sort-tab[aria-selected="true"]:hover {
+    background: var(--color-brand-700);
+    color: var(--color-neutral-50);
+}
+
 .block.product-list-page .search__product-list.dropin-design {
     grid-area: product-list;
     margin-block-end: var(--spacing-small);

@@ -1,7 +1,6 @@
 // Product Discovery Dropins
 import SearchResults from '@dropins/storefront-product-discovery/containers/SearchResults.js';
 import Facets from '@dropins/storefront-product-discovery/containers/Facets.js';
-import SortBy from '@dropins/storefront-product-discovery/containers/SortBy.js';
 import Pagination from '@dropins/storefront-product-discovery/containers/Pagination.js';
 import { render as provider } from '@dropins/storefront-product-discovery/render.js';
 import { Button, Icon, provider as UI } from '@dropins/tools/components.js';
@@ -32,7 +31,7 @@ export default async function decorate(block) {
       <div class="search__result-info"></div>
       <div class="search__view-facets"></div>
       <div class="search__facets dropin-design"></div>
-      <div class="search__product-sort"></div>
+      <div class="search__product-sort search__sort-tabs" role="tablist" aria-label="Sort by"></div>
       <div class="search__product-list dropin-design"></div>
       <div class="search__pagination"></div>
     </div>
@@ -113,10 +112,10 @@ export default async function decorate(block) {
     return button;
   };
 
-  await Promise.all([
-    // Sort By
-    provider.render(SortBy, {})($productSort),
+  // Last search request (for sort-tab re-runs)
+  let lastSearchRequest = { phrase: '', filter: [], sort: [], currentPage: 1, pageSize: 8 };
 
+  await Promise.all([
     // Pagination
     provider.render(Pagination, {
       onPageChange: () => {
@@ -177,6 +176,68 @@ export default async function decorate(block) {
     })($productList),
   ]);
 
+  // Sort tab labels (match dropin i18n)
+  const sortLabels = {
+    lowToHigh: 'Low to High',
+    highToLow: 'High to Low',
+    relevance: 'Relevance',
+  };
+
+  function buildSortTabOptions(sortableAttributes) {
+    if (!sortableAttributes?.length) return [];
+    const options = [];
+    sortableAttributes.forEach((attr) => {
+      if (attr.bidirectional) {
+        options.push({ label: `${attr.label}: ${sortLabels.lowToHigh}`, value: `${attr.attribute}_ASC` });
+        options.push({ label: `${attr.label}: ${sortLabels.highToLow}`, value: `${attr.attribute}_DESC` });
+      } else {
+        options.push({ label: attr.label, value: `${attr.attribute}_DESC` });
+      }
+    });
+    return options;
+  }
+
+  function getCurrentSortValue(sort) {
+    if (!sort?.length || !sort[0]) return '';
+    return `${sort[0].attribute}_${sort[0].direction}`;
+  }
+
+  function renderSortTabs(payload) {
+    const { request, result } = payload;
+    const sortableAttributes = result?.metadata?.sortableAttributes;
+    if (!sortableAttributes?.length) return;
+    lastSearchRequest = {
+      phrase: request?.phrase ?? '',
+      filter: request?.filter ?? [],
+      sort: request?.sort ?? [],
+      currentPage: request?.currentPage ?? 1,
+      pageSize: request?.pageSize ?? 8,
+    };
+    const options = buildSortTabOptions(sortableAttributes);
+    const currentValue = getCurrentSortValue(request?.sort) || (options[0]?.value ?? '');
+    $productSort.innerHTML = '';
+    options.forEach((opt) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.role = 'tab';
+      button.className = 'search__sort-tab';
+      button.dataset.sort = opt.value;
+      button.textContent = opt.label;
+      button.setAttribute('aria-selected', (opt.value === currentValue).toString());
+      button.addEventListener('click', () => {
+        const [attribute, direction] = opt.value.split('_');
+        search({
+          ...lastSearchRequest,
+          sort: [{ attribute, direction: direction === 'ASC' ? 'ASC' : 'DESC' }],
+          currentPage: 1,
+        }).catch(() => {});
+        $productSort.querySelectorAll('.search__sort-tab').forEach((t) => t.setAttribute('aria-selected', 'false'));
+        button.setAttribute('aria-selected', 'true');
+      });
+      $productSort.appendChild(button);
+    });
+  }
+
   // Listen for search results (event is fired before the block is rendered; eager: true)
   events.on('search/result', (payload) => {
     const totalCount = payload.result?.totalCount || 0;
@@ -194,6 +255,9 @@ export default async function decorate(block) {
     } else {
       $viewFacets.querySelector('button').removeAttribute('data-count');
     }
+
+    // Render sort as tabs (replaces dropdown)
+    renderSortTabs(payload);
   }, { eager: true });
 
   // Listen for search results (event is fired after the block is rendered; eager: false)
