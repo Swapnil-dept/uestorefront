@@ -2,6 +2,7 @@
 
 This project boilerplate is for AEM Authoring with Edge Delivery Services (aka Crosswalk) projects that integrate with Adobe Commerce.
 
+
 ## Documentation
 
 Before using the boilerplate, we recommend you to go through the documentation on <https://experienceleague.adobe.com/developer/commerce/storefront/> and more specifically:
