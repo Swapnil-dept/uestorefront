@@ -112,8 +112,33 @@ export default async function decorate(block) {
     return button;
   };
 
-  // Last search request (for sort-tab re-runs)
-  let lastSearchRequest = { phrase: '', filter: [], sort: [], currentPage: 1, pageSize: 8 };
+  // Last search request (for sort-tab re-runs) – same shape as dropdown uses
+  let lastSearchRequest = null;
+
+  /** Build request for search (sort tabs + dropdown): preserve phrase, filter, pageSize; override sort and currentPage */
+  function buildSearchRequest(newSort) {
+    const base = lastSearchRequest || {
+      phrase: '',
+      filter: [],
+      sort: [],
+      currentPage: 1,
+      pageSize: 8,
+    };
+    const filter = Array.isArray(base.filter) ? [...base.filter] : [];
+    if (config.urlpath) {
+      const hasCategory = filter.some((f) => f && f.attribute === 'categoryPath');
+      if (!hasCategory) {
+        filter.unshift({ attribute: 'categoryPath', eq: config.urlpath });
+      }
+    }
+    return {
+      phrase: base.phrase ?? '',
+      filter,
+      pageSize: base.pageSize ?? 8,
+      sort: newSort,
+      currentPage: 1,
+    };
+  }
 
   await Promise.all([
     // Pagination
@@ -226,11 +251,9 @@ export default async function decorate(block) {
       button.setAttribute('aria-selected', (opt.value === currentValue).toString());
       button.addEventListener('click', () => {
         const [attribute, direction] = opt.value.split('_');
-        search({
-          ...lastSearchRequest,
-          sort: [{ attribute, direction: direction === 'ASC' ? 'ASC' : 'DESC' }],
-          currentPage: 1,
-        }).catch(() => {});
+        const sortPayload = [{ attribute, direction: direction === 'ASC' ? 'ASC' : 'DESC' }];
+        const searchRequest = buildSearchRequest(sortPayload);
+        search(searchRequest).catch(() => {});
         $productSort.querySelectorAll('.search__sort-tab').forEach((t) => t.setAttribute('aria-selected', 'false'));
         button.setAttribute('aria-selected', 'true');
       });
@@ -250,10 +273,14 @@ export default async function decorate(block) {
       : `${totalCount} results found.`;
 
     // Update the view facets button with the number of filters
-    if (payload.request.filter.length > 0) {
-      $viewFacets.querySelector('button').setAttribute('data-count', payload.request.filter.length);
-    } else {
-      $viewFacets.querySelector('button').removeAttribute('data-count');
+    const filterCount = payload.request?.filter?.length ?? 0;
+    const viewFacetsBtn = $viewFacets.querySelector('button');
+    if (viewFacetsBtn) {
+      if (filterCount > 0) {
+        viewFacetsBtn.setAttribute('data-count', filterCount);
+      } else {
+        viewFacetsBtn.removeAttribute('data-count');
+      }
     }
 
     // Render sort as tabs (replaces dropdown)
