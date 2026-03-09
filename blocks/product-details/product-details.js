@@ -82,7 +82,7 @@ export default async function decorate(block) {
   // State to track if we are in update mode
   let isUpdateMode = false;
 
-  // Layout
+  // Layout – Flipkart-style: gallery left, info right; Buy Now + Add to Cart; tabbed description/attributes
   const fragment = document.createRange().createContextualFragment(`
     <div class="product-details__alert"></div>
     <div class="product-details__wrapper">
@@ -99,18 +99,36 @@ export default async function decorate(block) {
           <div class="product-details__options"></div>
           <div class="product-details__quantity"></div>
           <div class="product-details__buttons">
+            <div class="product-details__buttons__buy-now"></div>
             <div class="product-details__buttons__add-to-cart"></div>
             <div class="product-details__buttons__add-to-wishlist"></div>
           </div>
         </div>
-        <div class="product-details__description"></div>
-        <div class="product-details__attributes"></div>
+        <div class="product-details__tabs" role="tablist">
+          <div class="product-details__tabs-nav">
+            <button type="button" role="tab" aria-selected="true" aria-controls="pdp-tab-description" id="pdp-tab-btn-description">Description</button>
+            <button type="button" role="tab" aria-selected="false" aria-controls="pdp-tab-specification" id="pdp-tab-btn-specification">Specification</button>
+          </div>
+          <div class="product-details__tabs-panel" id="pdp-tab-description" role="tabpanel" aria-labelledby="pdp-tab-btn-description" aria-hidden="false">
+            <div class="product-details__description"></div>
+          </div>
+          <div class="product-details__tabs-panel" id="pdp-tab-specification" role="tabpanel" aria-labelledby="pdp-tab-btn-specification" aria-hidden="true">
+            <div class="product-details__attributes"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="product-details__sticky-cta" aria-hidden="true">
+      <span class="product-details__sticky-cta__price"></span>
+      <div class="product-details__sticky-cta__actions">
+        <div class="product-details__sticky-cta__buy-now"></div>
+        <div class="product-details__sticky-cta__add-to-cart"></div>
       </div>
     </div>
   `);
 
   const $alert = fragment.querySelector('.product-details__alert');
-  const $gallery = fragment.querySelector('.product-details__gallery');
+  const $gallery = fragment.querySelector('.product-details__left-column .product-details__gallery');
   const $header = fragment.querySelector('.product-details__header');
   const $price = fragment.querySelector('.product-details__price');
   const $galleryMobile = fragment.querySelector('.product-details__right-column .product-details__gallery');
@@ -118,12 +136,51 @@ export default async function decorate(block) {
   const $options = fragment.querySelector('.product-details__options');
   const $quantity = fragment.querySelector('.product-details__quantity');
   const $giftCardOptions = fragment.querySelector('.product-details__gift-card-options');
+  const $buyNow = fragment.querySelector('.product-details__buttons__buy-now');
   const $addToCart = fragment.querySelector('.product-details__buttons__add-to-cart');
   const $wishlistToggleBtn = fragment.querySelector('.product-details__buttons__add-to-wishlist');
   const $description = fragment.querySelector('.product-details__description');
   const $attributes = fragment.querySelector('.product-details__attributes');
+  const $tabsNav = fragment.querySelector('.product-details__tabs-nav');
+  const $stickyCta = fragment.querySelector('.product-details__sticky-cta');
+  const $stickyPrice = fragment.querySelector('.product-details__sticky-cta__price');
+  const $stickyBuyNow = fragment.querySelector('.product-details__sticky-cta__buy-now');
+  const $stickyAddToCart = fragment.querySelector('.product-details__sticky-cta__add-to-cart');
 
   block.replaceChildren(fragment);
+
+  // Tab switching (Flipkart-style Description / Specification)
+  if ($tabsNav) {
+    const panels = block.querySelectorAll('.product-details__tabs-panel');
+    const tabs = $tabsNav.querySelectorAll('button[role="tab"]');
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.setAttribute('aria-selected', 'false'));
+        panels.forEach((p) => p.setAttribute('aria-hidden', 'true'));
+        tab.setAttribute('aria-selected', 'true');
+        const id = tab.getAttribute('aria-controls');
+        const panel = block.querySelector(`#${id}`);
+        if (panel) panel.setAttribute('aria-hidden', 'false');
+      });
+    });
+  }
+
+  // Sticky CTA: visibility on scroll and price sync (mobile)
+  if ($stickyCta && $price) {
+    const observer = new IntersectionObserver(
+      ([e]) => {
+        const visible = e.intersectionRatio < 1;
+        $stickyCta.classList.toggle('is-visible', visible);
+        $stickyCta.setAttribute('aria-hidden', (!visible).toString());
+        if (visible && $stickyPrice) {
+          const priceEl = $price.querySelector('.dropin-price, .pdp-price, [class*="price"]');
+          $stickyPrice.textContent = priceEl ? priceEl.textContent.trim() : '';
+        }
+      },
+      { threshold: 1, rootMargin: '-60px 0px 0px 0px' },
+    );
+    observer.observe($price);
+  }
 
   const gallerySlots = {
     CarouselThumbnail: (ctx) => {
@@ -225,91 +282,89 @@ export default async function decorate(block) {
     })($wishlistToggleBtn),
   ]);
 
+  // Add to Cart handler (shared by main and sticky CTA)
+  const addToCartAndMaybeRedirect = async (redirectToCart = false) => {
+    const buttonActionText = isUpdateMode
+      ? labels.Global?.UpdatingInCart
+      : labels.Global?.AddingToCart;
+    try {
+      addToCart.setProps((prev) => ({
+        ...prev,
+        children: buttonActionText,
+        disabled: true,
+      }));
+
+      const values = pdpApi.getProductConfigurationValues();
+      const valid = pdpApi.isProductConfigurationValid();
+
+      if (valid) {
+        if (isUpdateMode) {
+          const { updateProductsFromCart } = await import('@dropins/storefront-cart/api.js');
+          await updateProductsFromCart([{ ...values, uid: itemUidFromUrl }]);
+          const updatedSku = values?.sku;
+          if (updatedSku) {
+            const cartRedirectUrl = new URL(rootLink('/cart'), window.location.origin);
+            cartRedirectUrl.searchParams.set('itemUid', itemUidFromUrl);
+            window.location.href = cartRedirectUrl.toString();
+          } else {
+            window.location.href = rootLink('/cart');
+          }
+          return;
+        }
+        const { addProductsToCart } = await import('@dropins/storefront-cart/api.js');
+        await addProductsToCart([{ ...values }]);
+        if (redirectToCart) {
+          window.location.href = rootLink('/cart');
+          return;
+        }
+        inlineAlert?.remove();
+      }
+    } catch (error) {
+      inlineAlert = await UI.render(InLineAlert, {
+        heading: 'Error',
+        description: error.message,
+        icon: h(Icon, { source: 'Warning' }),
+        'aria-live': 'assertive',
+        role: 'alert',
+        onDismiss: () => { inlineAlert.remove(); },
+      })($alert);
+      $alert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } finally {
+      updateAddToCartButtonText(addToCart, isUpdateMode, labels);
+      addToCart.setProps((prev) => ({ ...prev, disabled: false }));
+    }
+  };
+
+  // Buy Now (Flipkart-style primary CTA – add to cart and go to cart)
+  const buyNowLabel = labels.Global?.BuyNow ?? 'Buy Now';
+  await UI.render(Button, {
+    children: buyNowLabel,
+    variant: 'primary',
+    onClick: () => addToCartAndMaybeRedirect(true),
+  })($buyNow);
+
   // Configuration – Button - Add to Cart
   const addToCart = await UI.render(Button, {
     children: labels.Global?.AddProductToCart,
     icon: h(Icon, { source: 'Cart' }),
-    onClick: async () => {
-      const buttonActionText = isUpdateMode
-        ? labels.Global?.UpdatingInCart
-        : labels.Global?.AddingToCart;
-      try {
-        addToCart.setProps((prev) => ({
-          ...prev,
-          children: buttonActionText,
-          disabled: true,
-        }));
-
-        // get the current selection values
-        const values = pdpApi.getProductConfigurationValues();
-        const valid = pdpApi.isProductConfigurationValid();
-
-        // add or update the product in the cart
-        if (valid) {
-          if (isUpdateMode) {
-            // --- Update existing item ---
-            const { updateProductsFromCart } = await import(
-              '@dropins/storefront-cart/api.js'
-            );
-
-            await updateProductsFromCart([{ ...values, uid: itemUidFromUrl }]);
-
-            // --- START REDIRECT ON UPDATE ---
-            const updatedSku = values?.sku;
-            if (updatedSku) {
-              const cartRedirectUrl = new URL(
-                rootLink('/cart'),
-                window.location.origin,
-              );
-              cartRedirectUrl.searchParams.set('itemUid', itemUidFromUrl);
-              window.location.href = cartRedirectUrl.toString();
-            } else {
-              // Fallback if SKU is somehow missing (shouldn't happen in normal flow)
-              console.warn(
-                'Could not retrieve SKU for updated item. Redirecting to cart without parameter.',
-              );
-              window.location.href = rootLink('/cart');
-            }
-            return;
-          }
-          // --- Add new item ---
-          const { addProductsToCart } = await import(
-            '@dropins/storefront-cart/api.js'
-          );
-          await addProductsToCart([{ ...values }]);
-        }
-
-        // reset any previous alerts if successful
-        inlineAlert?.remove();
-      } catch (error) {
-        // add alert message
-        inlineAlert = await UI.render(InLineAlert, {
-          heading: 'Error',
-          description: error.message,
-          icon: h(Icon, { source: 'Warning' }),
-          'aria-live': 'assertive',
-          role: 'alert',
-          onDismiss: () => {
-            inlineAlert.remove();
-          },
-        })($alert);
-
-        // Scroll the alertWrapper into view
-        $alert.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      } finally {
-        // Reset button text using the helper function which respects the current mode
-        updateAddToCartButtonText(addToCart, isUpdateMode, labels);
-        // Re-enable button
-        addToCart.setProps((prev) => ({
-          ...prev,
-          disabled: false,
-        }));
-      }
-    },
+    onClick: () => addToCartAndMaybeRedirect(false),
   })($addToCart);
+
+  // Sticky CTA buttons (mobile): trigger main Buy Now / Add to Cart
+  if ($stickyBuyNow) {
+    UI.render(Button, {
+      children: buyNowLabel,
+      variant: 'primary',
+      onClick: () => $buyNow?.querySelector('button')?.click(),
+    })($stickyBuyNow);
+  }
+  if ($stickyAddToCart) {
+    UI.render(Button, {
+      children: labels.Global?.AddProductToCart,
+      icon: h(Icon, { source: 'Cart' }),
+      onClick: () => $addToCart?.querySelector('button')?.click(),
+    })($stickyAddToCart);
+  }
 
   // Lifecycle Events
   events.on('pdp/valid', (valid) => {
