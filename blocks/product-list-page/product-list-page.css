@@ -56,7 +56,7 @@
     width: 1.75em;
 }
 
-/* Facets sidebar – dropin-design for filter styling */
+/* Facets sidebar – dropin-design, Flipkart-style sticky left panel */
 .block.product-list-page .search__facets.dropin-design {
     grid-area: facets;
     margin-block-end: var(--spacing-small);
@@ -65,6 +65,79 @@
 
 .block.product-list-page .search__facets.dropin-design.search__facets--visible {
     display: block;
+}
+
+/* Flipkart-style facet accordion (when sidebar is visible on desktop) */
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet-list__selected-filters {
+    padding-block-end: var(--spacing-small);
+    margin-block-end: var(--spacing-xsmall);
+    border-bottom: 1px solid var(--color-neutral-300);
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet {
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid var(--color-neutral-300);
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet:last-of-type {
+    border-bottom: none;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--spacing-small) 0;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--color-neutral-900);
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-align: left;
+    appearance: none;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet__header::after {
+    content: "";
+    flex-shrink: 0;
+    width: 0;
+    height: 0;
+    margin-inline-start: var(--spacing-xsmall);
+    border-inline: 4px solid transparent;
+    border-block-start: 6px solid currentColor;
+    border-block-end: none;
+    transition: transform 0.2s ease;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet--collapsed .product-discovery-facet__header::after {
+    transform: rotate(-90deg);
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet__header:hover {
+    color: var(--color-brand-600);
+}
+
+/* Accordion body: hide all content except header when collapsed */
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet--collapsed > *:not(.product-discovery-facet__header) {
+    display: none !important;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet__bucket {
+    padding-block-end: var(--spacing-xsmall);
+    padding-inline-start: 0;
+}
+
+.block.product-list-page .search__facets.dropin-design .product-discovery-facet__bucket:first-of-type {
+    padding-block-start: 0;
 }
 
 .block.product-list-page .search__product-sort {
@@ -189,17 +262,25 @@
         display: none;
     }
 
-    /* Sidebar: facets with dropin-design, Flipkart-style narrow sticky panel */
+    /* Sidebar: facets with dropin-design – Flipkart-style sticky left accordion panel */
     .block.product-list-page .search__facets.dropin-design {
         display: block;
         position: sticky;
         top: 16px;
         max-height: calc(100vh - 32px);
         overflow-y: auto;
-        padding-inline-end: 16px;
+        padding: var(--spacing-small);
+        padding-inline-end: var(--spacing-medium);
         margin-inline-end: 0;
         border-inline-end: 1px solid var(--color-neutral-300);
         background: var(--color-neutral-50);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .block.product-list-page .search__facets.dropin-design .product-discovery-facet-list__facet-options {
+        display: flex;
+        flex-direction: column;
     }
 
     .block.product-list-page .search__result-info {

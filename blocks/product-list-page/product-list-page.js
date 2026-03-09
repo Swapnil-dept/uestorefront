@@ -287,8 +287,38 @@ export default async function decorate(block) {
     renderSortTabs(payload);
   }, { eager: true });
 
+  /** Flipkart-style accordion: collapse/expand facet sections when header is clicked */
+  function initFacetAccordions() {
+    const facetSections = $facets.querySelectorAll('.product-discovery-facet');
+    facetSections.forEach((section) => {
+      const header = section.querySelector('.product-discovery-facet__header');
+      if (!header || header.dataset.accordionInit) return;
+      header.dataset.accordionInit = 'true';
+      header.setAttribute('role', 'button');
+      header.setAttribute('tabindex', '0');
+      header.setAttribute('aria-expanded', 'true');
+      section.classList.remove('product-discovery-facet--collapsed');
+      const toggle = () => {
+        const collapsed = section.classList.toggle('product-discovery-facet--collapsed');
+        header.setAttribute('aria-expanded', (!collapsed).toString());
+      };
+      header.addEventListener('click', toggle);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+    });
+  }
+
   // Listen for search results (event is fired after the block is rendered; eager: false)
   events.on('search/result', (payload) => {
+    // Init facet accordions after dropin has rendered
+    requestAnimationFrame(() => {
+      initFacetAccordions();
+    });
+
     // update URL with new search params
     const url = new URL(window.location.href);
 
