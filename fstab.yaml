@@ -1,6 +1,6 @@
 mountpoints:
   /:
-    url: "https://author-p48457-e1275402.adobeaemcloud.com/bin/franklin.delivery/Swapnil-dept/uestorefront/main"
+    url: "https://author-p48457-e1275402.adobeaemcloud.com/bin/franklin.delivery/swapnil-dept/uestorefront/main"
     type: "markup"
     suffix: ".html"
   
