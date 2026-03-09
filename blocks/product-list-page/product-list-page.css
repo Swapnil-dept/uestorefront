@@ -1,3 +1,4 @@
+/* Flipkart-style PLP: sidebar filters + top bar (count + sort) + dense product grid */
 
 .block.product-list-page .search__wrapper {
     display: grid;
@@ -9,16 +10,20 @@
         "product-sort"
         "product-list"
         "pagination";
+    gap: 0;
 }
 
 .block.product-list-page .search__result-info {
     grid-area: result-info;
     align-self: center;
     margin-block-end: var(--spacing-small);
+    font-size: 0.875rem;
+    color: var(--color-neutral-700);
 }
 
 .block.product-list-page .search__result-info strong {
     font-weight: 600;
+    color: var(--color-neutral-900);
 }
 
 .block.product-list-page .search__view-facets {
@@ -68,6 +73,32 @@
 .block.product-list-page .search__product-list {
     grid-area: product-list;
     margin-block-end: var(--spacing-small);
+    min-width: 0;
+}
+
+/* Flipkart-style dense product grid: more columns, tighter gaps */
+.block.product-list-page .search__product-list .product-discovery-product-list {
+    width: 100%;
+}
+
+.block.product-list-page .search__product-list .product-discovery-product-list__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-small);
+}
+
+.block.product-list-page .search__product-list .product-discovery-product-list__grid .dropin-product-item-card {
+    margin: 0;
+    width: 100%;
+    background: var(--color-neutral-50);
+    border: 1px solid var(--color-neutral-300);
+    border-radius: var(--shape-border-radius-2);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.block.product-list-page .search__product-list .product-discovery-product-list__grid .dropin-product-item-card:hover {
+    box-shadow: var(--shape-shadow-2);
 }
 
 .block.product-list-page .search__pagination {
@@ -97,14 +128,17 @@
     display: none;
 }
 
-/* Media Queries */
+/* Tablet: sidebar + content, top bar row (count left, sort right), product grid */
 @media only screen and (min-width: 768px) {
     .block.product-list-page .search__wrapper {
         grid-template-areas:
-            "result-info product-sort"
-            "facets product-list"
-            ". pagination";
-        grid-template-columns: 270px 1fr;
+            "facets result-info product-sort"
+            "facets product-list product-list"
+            "facets pagination pagination";
+        grid-template-columns: 240px 1fr auto;
+        grid-template-rows: auto 1fr auto;
+        align-items: start;
+        gap: var(--spacing-small) var(--spacing-medium);
     }
 
     .block.product-list-page .search__view-facets {
@@ -112,12 +146,52 @@
     }
 
     .block.product-list-page .search__facets {
-        display: unset;
-        margin-right: var(--spacing-small);
+        display: block;
+        position: sticky;
+        top: var(--spacing-small);
+        max-height: calc(100vh - var(--spacing-small) * 2);
+        overflow-y: auto;
+        padding-inline-end: var(--spacing-small);
+        border-inline-end: 1px solid var(--color-neutral-300);
+    }
+
+    .block.product-list-page .search__result-info {
+        margin-block-end: 0;
     }
 
     .block.product-list-page .search__product-sort {
         display: flex;
         justify-content: flex-end;
+        margin-block-end: 0;
+    }
+
+    /* Top bar: result count left, sort right (Flipkart-style) */
+    .block.product-list-page .search__result-info,
+    .block.product-list-page .search__product-sort {
+        align-self: center;
+    }
+
+    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: var(--spacing-small);
+    }
+}
+
+/* Desktop: 4 columns (Flipkart-like) */
+@media only screen and (min-width: 1024px) {
+    .block.product-list-page .search__wrapper {
+        grid-template-columns: 260px 1fr;
+    }
+
+    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Large desktop: 5 columns like Flipkart */
+@media only screen and (min-width: 1280px) {
+    .block.product-list-page .search__product-list .product-discovery-product-list__grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: var(--spacing-small);
     }
 }
